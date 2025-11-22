@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: banking-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bankingdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  mongo:
+    image: mongo:7
+    container_name: banking-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: bankingdb
+
+  app:
+    build: .
+    container_name: banking-app
+    depends_on:
+      - postgres
+      - mongo
+    ports:
+      - "8080:8080"   # ou "8081:8080" si 8080 est déjà pris sur ta machine
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bankingdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_DATA_MONGODB_URI: mongodb://mongo:27017/bankingdb
+
+volumes:
+  pgdata:

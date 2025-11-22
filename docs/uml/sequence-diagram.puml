@@ -1,0 +1,36 @@
+@startuml
+actor Customer
+participant "TransactionController" as TC
+participant "TransactionService" as TS
+participant "BankAccountRepositoryPort" as BARepo
+participant "UserRepositoryPort" as URepo
+participant "TransactionLoggingAspect" as Aspect
+participant "TransactionLogPort" as LogPort
+
+Customer -> TC: POST /api/transactions/local
+(TransactionRequest)
+TC -> TS: performLocalTransaction(request)
+activate TS
+
+Aspect -> TS: @Around(LogTransaction)
+wrap call
+
+TS -> BARepo: findByAccountNumber(fromAccount)
+TS <- BARepo: BankAccount from
+TS -> BARepo: findByAccountNumber(toAccount)
+TS <- BARepo: BankAccount to
+TS -> URepo: from.getUser()
+TS <- URepo: User fromUser
+TS -> TS: validate not blocked
+and sufficient balance
+TS -> TS: debit from / credit to
+TS -> BARepo: save(from)
+TS -> BARepo: save(to)
+deactivate TS
+
+Aspect -> LogPort: save(TransactionLog)
+Aspect <- LogPort: ack
+
+TC <- TS: 200 OK
+Customer <- TC: Response OK
+@enduml

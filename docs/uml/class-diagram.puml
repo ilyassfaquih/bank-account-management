@@ -1,0 +1,86 @@
+@startuml
+package domain.model {
+    class User {
+        +Long id
+        +String username
+        +String fullName
+        +String password
+        +Role role
+        +boolean blocked
+        +BankAccount bankAccount
+        +block()
+    }
+
+    class BankAccount {
+        +Long id
+        +String accountNumber
+        +String currency
+        +BigDecimal balance
+        +User user
+        +debit(amount)
+        +credit(amount)
+    }
+
+    enum Role {
+        CUSTOMER
+        MANAGER
+    }
+
+    enum TransactionType {
+        LOCAL
+        FOREX
+    }
+
+    class TransactionLog {
+        +String id
+        +String fromAccount
+        +String toAccount
+        +BigDecimal amount
+        +String currencyFrom
+        +String currencyTo
+        +TransactionType type
+        +Instant timestamp
+    }
+}
+
+package domain.ports.out {
+    interface UserRepositoryPort
+    interface BankAccountRepositoryPort
+    interface TransactionLogPort
+}
+
+package domain.ports.in {
+    interface RegisterUserUseCase
+    interface BlockUserUseCase
+    interface PerformTransactionUseCase
+    interface GenerateStatementUseCase
+}
+
+package application.service {
+    class UserService
+    class TransactionService
+    class StatementService
+}
+
+package infrastructure.aop {
+    annotation LogTransaction
+    class TransactionLoggingAspect
+}
+
+User "1" -- "1" BankAccount
+UserService ..> UserRepositoryPort
+UserService ..> BankAccountRepositoryPort
+
+TransactionService ..> BankAccountRepositoryPort
+TransactionService ..> UserRepositoryPort
+TransactionService ..> LogTransaction
+
+StatementService ..> TransactionLogPort
+TransactionLoggingAspect ..> TransactionLogPort
+
+TransactionLoggingAspect ..> LogTransaction
+PerformTransactionUseCase <|.. TransactionService
+RegisterUserUseCase <|.. UserService
+BlockUserUseCase <|.. UserService
+GenerateStatementUseCase <|.. StatementService
+@enduml
